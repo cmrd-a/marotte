@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "marotte"
+version = "0.1.0"
+description = ""
+authors = ["cmrd"]
+license = ""
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = {extras = ["speedups"], version = "^3.8.1"}
+PyYAML = "^6.0"
+
+[tool.poetry.dev-dependencies]
+uvicorn = {extras = ["standard"], version = "^0.17.5"}
+fastapi = "^0.74.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

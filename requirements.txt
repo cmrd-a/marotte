@@ -1,0 +1,5 @@
+aiohttp[speedups]
+pyyaml
+
+fastapi
+uvicorn[standard]

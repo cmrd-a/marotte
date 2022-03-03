@@ -1,0 +1,3 @@
+http_real_host: localhost
+http_real_host_port: 5000
+default_ttl: 3600
