@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from settings import config
 
 @dataclass
 class Stub:
+    method: str = field(default="GET")
     path: str = field(default="/")
     id: float = field(default_factory=lambda: datetime.utcnow().timestamp())
     body: dict = field(default_factory=dict)
@@ -19,22 +21,28 @@ class Stub:
     resp_headers: dict = field(default_factory=dict)
 
 
-stubs: [Stub] = list()
-
-stubs.append(Stub(path="my", resp_body="my body"))
+stubs: [Stub] = [
+    Stub(path="/my", resp_body="my body"),
+    Stub(method="POST", path="/my", body={"id": 21}, resp_body="my body 21"),
+    Stub(method="POST", path="/my", body={"id": 42}, resp_body="my body 42"),
+]
 
 
 async def handle(request):
-    name = request.match_info.get('name', "Anonymous")
+    path = request.raw_path
     for stub in stubs:
-        if name == stub.path:
+        if request.method == stub.method and path == stub.path:
+            if request.method == "POST" and request.has_body:
+                req_body = await request.json()
+                if req_body != stub.body:
+                    continue
             text = stub.resp_body
             return web.Response(text=text)
 
-    resolver = AsyncResolver(nameservers=["8.8.8.8", "8.8.4.4"])
-    conn = TCPConnector(resolver=resolver)
+    resolver = AsyncResolver(nameservers=["8.8.8.8"])
+    conn = TCPConnector(resolver=resolver)  # windows slow dns fix
     async with ClientSession(connector=conn) as session:
-        async with session.get(f"{config['http_real_address']}/{name}") as response:
+        async with session.get(f"{config['http_real_address']}{path}") as response:
             print("Status:", response.status)
             html = await response.text()
             return web.Response(text=html[:20])
@@ -51,17 +59,19 @@ async def get_stubs(request):
 
 async def create_stub(request):
     body = await request.json()
-    stub = Stub(**body)
+    stub = Stub(**body)  # todo: list of subs
     stubs.append(stub)
     return web.Response(body=json.dumps(asdict(stub)), content_type="application/json")
 
+
 app = web.Application()
+logging.basicConfig(level=logging.DEBUG)
 app['config'] = config
 app.add_routes([
     web.get('/__stubs', get_stubs),
     web.post('/__stubs', create_stub),
-    web.get('/', handle),
-    web.get('/{name}', handle),
+    web.get('/{path_var:.*}', handle),
+    web.post('/{path_var:.*}', handle),
 ])
 
 if __name__ == '__main__':
