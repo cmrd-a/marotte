@@ -14,7 +14,7 @@ class Stub:
     method: str = field(default="GET")
     path: str = field(default="/")
     id: float = field(default_factory=lambda: datetime.utcnow().timestamp())
-    body: dict = field(default_factory=dict)
+    body: dict = field(default=None)
 
     resp_status: int = field(default=200)
     resp_body: str = field(default="")
@@ -28,24 +28,36 @@ stubs: [Stub] = [
 ]
 
 
-async def handle(request):
+async def handle_get(request):
     path = request.raw_path
     for stub in stubs:
-        if request.method == stub.method and path == stub.path:
-            if request.method == "POST" and request.has_body:
-                req_body = await request.json()
-                if req_body != stub.body:
-                    continue
+        if stub.method == "GET" and path == stub.path:
+            return web.Response(text=stub.resp_body)
+
+    resolver = AsyncResolver(nameservers=["8.8.8.8"])
+    conn = TCPConnector(resolver=resolver)  # windows slow dns fix
+    async with ClientSession(connector=conn) as session:
+        async with session.get(f"{config['http_real_address']}{path}") as response:
+            resp_text = await response.text()
+            return web.Response(text=resp_text)
+
+
+async def handle_post(request):
+    path = request.raw_path
+    req_body = await request.json() if request.has_body else None
+    for stub in stubs:
+        if stub.method == "POST" and path == stub.path:
+            if req_body != stub.body:
+                continue
             text = stub.resp_body
             return web.Response(text=text)
 
     resolver = AsyncResolver(nameservers=["8.8.8.8"])
     conn = TCPConnector(resolver=resolver)  # windows slow dns fix
     async with ClientSession(connector=conn) as session:
-        async with session.get(f"{config['http_real_address']}{path}") as response:
-            print("Status:", response.status)
-            html = await response.text()
-            return web.Response(text=html[:20])
+        async with session.post(f"{config['http_real_address']}{path}", json=req_body) as response:
+            resp_text = await response.text()
+            return web.Response(text=resp_text)
 
 
 async def get_stubs(request):
@@ -70,8 +82,8 @@ app['config'] = config
 app.add_routes([
     web.get('/__stubs', get_stubs),
     web.post('/__stubs', create_stub),
-    web.get('/{path_var:.*}', handle),
-    web.post('/{path_var:.*}', handle),
+    web.get('/{path_var:.*}', handle_get),
+    web.post('/{path_var:.*}', handle_post),
 ])
 
 if __name__ == '__main__':

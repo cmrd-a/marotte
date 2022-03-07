@@ -32,8 +32,8 @@ async def create_item(item: Item):
     return item
 
 
-@app.post("/shitty_post/")
-async def create_item(item: Item):
+@app.post("/post-but-get/")
+async def post_but_get(item: Item):
     return items_list[item.item_id]
 
 
