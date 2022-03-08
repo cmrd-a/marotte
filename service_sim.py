@@ -13,10 +13,9 @@ class Item(BaseModel):
 
 app = FastAPI()
 
-items_list = [
-    Item(item_id=0, name="item0"),
-    Item(item_id=1, name="item1"),
-]
+items_list = []
+for i in range(2):
+    items_list.append(Item(item_id=i, name=f"item-{i}"))
 
 
 @app.get("/items")
@@ -46,4 +45,4 @@ if __name__ == "__main__":
     with open(config_path) as f:
         conf = yaml.safe_load(f)
 
-    uvicorn.run(app, host=conf['http_target_host'], port=conf['http_target_port'])
+    uvicorn.run(app, host="0.0.0.0", port=conf['http_target_port'])
