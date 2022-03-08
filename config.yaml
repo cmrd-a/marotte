@@ -1,3 +1,6 @@
-http_real_host: localhost
-http_real_host_port: 6000
+app_host: 127.0.0.1
+app_port: 8080
+
+http_target_host: localhost
+http_target_port: 6000
 default_ttl: 3600

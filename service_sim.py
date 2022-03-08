@@ -1,4 +1,7 @@
+import pathlib
+
 import uvicorn
+import yaml
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -38,4 +41,9 @@ async def post_but_get(item: Item):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=6000)
+    BASE_DIR = pathlib.Path(__file__).parent
+    config_path = BASE_DIR / 'config.yaml'
+    with open(config_path) as f:
+        conf = yaml.safe_load(f)
+
+    uvicorn.run(app, host=conf['http_target_host'], port=conf['http_target_port'])

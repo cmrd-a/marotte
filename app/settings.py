@@ -8,7 +8,7 @@ config_path = BASE_DIR / 'config.yaml'
 def get_config(path):
     with open(path) as f:
         conf = yaml.safe_load(f)
-        conf["http_real_address"] = f"http://{conf['http_real_host']}:{conf['http_real_host_port']}"
+        conf["http_target_address"] = f"http://{conf['http_target_host']}:{conf['http_target_port']}"
     return conf
 
 
